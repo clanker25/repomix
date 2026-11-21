@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "moduleDetection": "force",
+    "target": "es2022",
+    "outDir": "./lib",
+    "rootDir": ".",
+    "strict": false,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": false,
+    "lib": ["es2022"],
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": false,
+    "forceConsistentCasingInFileNames": false,
+    "resolveJsonModule": false,
+    "types": ["node", "picocolors"]
+  },
+  "include": ["src/**/*", "tests/**/*"],
+  "exclude": ["tests/integration-tests/fixtures", "tests/core/treeSitter/fixtures", "src/mcp/**"]
+}

@@ -1,0 +1,123 @@
+import { describe, expect, test } from 'vitest';
+import { generateSkillMd } from '../../../src/core/skill/skillStyle.js';
+
+describe('skillStyle', () => {
+  describe('generateSkillMd', () => {
+    const createTestContext = (overrides = {}) => ({
+      skillName: 'test-skill',
+      skillDescription: 'Test description',
+      projectName: 'Test Project',
+      totalFiles: 1,
+      totalLines: 100,
+      totalTokens: 100,
+      hasTechStack: false,
+      ...overrides,
+    });
+
+    test('should generate SKILL.md with all fields', () => {
+      const context = createTestContext({
+        skillName: 'my-project-skill',
+        skillDescription: 'Reference codebase for My Project.',
+        projectName: 'My Project',
+        totalFiles: 42,
+        totalLines: 1000,
+        totalTokens: 12345,
+      });
+
+      const result = generateSkillMd(context);
+
+      // Check YAML frontmatter
+      expect(result).toContain('---');
+      expect(result).toContain('name: my-project-skill');
+      expect(result).toContain('description: Reference codebase for My Project.');
+
+      // Check content
+      expect(result).toContain('# My Project Codebase Reference');
+      expect(result).toContain('42 files');
+      expect(result).toContain('12345 tokens');
+    });
+
+    test('should include the static sections and files table', () => {
+      const result = generateSkillMd(createTestContext());
+      expect(result.startsWith('---\nname: test-skill\ndescription: Test description\n---\n')).toBe(true);
+      expect(result).toContain('## Overview');
+      expect(result).toContain('## Files\n\n| File | Contents |');
+      expect(result).toContain('## How to Use');
+      expect(result).toContain('### 1. Find file locations');
+      expect(result).toContain('### 2. Read file contents');
+      expect(result).toContain('### 3. Search for code');
+      expect(result).toContain('## Common Use Cases');
+      expect(result).toContain('## Tips');
+    });
+
+    test('should render tech-stack lines in place without leaving blank lines when absent', () => {
+      const withTech = generateSkillMd(createTestContext({ hasTechStack: true }));
+      expect(withTech).toContain(
+        '| `references/files.md` | All file contents (search with `## File: <path>`) |\n| `references/tech-stacks.md` |',
+      );
+      expect(withTech).toContain('file statistics\n- Check `tech-stacks.md`');
+
+      const withoutTech = generateSkillMd(createTestContext({ hasTechStack: false }));
+      expect(withoutTech).toContain(
+        '| `references/files.md` | All file contents (search with `## File: <path>`) |\n\n## How to Use',
+      );
+      expect(withoutTech).toContain('file statistics\n\n---');
+    });
+
+    test('should link the source URL only when provided', () => {
+      const withSource = generateSkillMd(createTestContext({ sourceUrl: 'https://github.com/o/r' }));
+      expect(
+        withSource.endsWith(
+          '[Repomix](https://github.com/yamadashy/repomix) from [Test Project](https://github.com/o/r)\n',
+        ),
+      ).toBe(true);
+
+      const withoutSource = generateSkillMd(createTestContext());
+      expect(withoutSource.endsWith('[Repomix](https://github.com/yamadashy/repomix)\n')).toBe(true);
+    });
+
+    test('should insert values verbatim without escaping', () => {
+      const result = generateSkillMd(createTestContext({ projectName: 'A & <B> "c"', totalFiles: 0 }));
+      expect(result).toContain('# A & <B> "c" Codebase Reference');
+      expect(result).toContain('0 files | 100 lines | 100 tokens');
+    });
+
+    test('should end with newline', () => {
+      const result = generateSkillMd(createTestContext());
+      expect(result.endsWith('\n')).toBe(true);
+    });
+
+    test('should include references to multiple files', () => {
+      const result = generateSkillMd(createTestContext());
+      expect(result).toContain('`references/summary.md`');
+      expect(result).toContain('`references/project-structure.md`');
+      expect(result).toContain('`references/files.md`');
+    });
+
+    test('should not include git sections (skill output is for reference codebases)', () => {
+      const result = generateSkillMd(createTestContext());
+      expect(result).not.toContain('git-diffs.md');
+      expect(result).not.toContain('git-logs.md');
+    });
+
+    test('should include tech-stack reference when hasTechStack is true', () => {
+      const result = generateSkillMd(createTestContext({ hasTechStack: true }));
+      expect(result).toContain('`references/tech-stacks.md`');
+    });
+
+    test('should not include tech-stack reference when hasTechStack is false', () => {
+      const result = generateSkillMd(createTestContext({ hasTechStack: false }));
+      expect(result).not.toContain('tech-stacks.md');
+    });
+
+    test('should not include statistics section (moved to summary.md)', () => {
+      const result = generateSkillMd(createTestContext());
+      expect(result).not.toContain('## Statistics');
+    });
+
+    test('should include total lines in header', () => {
+      const result = generateSkillMd(createTestContext({ totalLines: 5000 }));
+      expect(result).toContain('5000 lines');
+    });
+  });
+});
